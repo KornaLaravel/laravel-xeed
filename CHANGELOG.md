@@ -1,5 +1,14 @@
 # Release Notes
 
+## v2.0.2 - 2026-06-27
+
+### What's Changed
+
+* Fix deploy action icon in README by [@cable8mm](https://github.com/cable8mm) in https://github.com/cable8mm/xeed/pull/108
+* refactoring: all codes by [@cable8mm](https://github.com/cable8mm) in https://github.com/cable8mm/xeed/pull/109
+
+**Full Changelog**: https://github.com/cable8mm/xeed/compare/v2.0.1...v2.0.2
+
 ## v2.0.1 - 2026-02-13
 
 ### What's Changed
