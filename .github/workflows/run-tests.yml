@@ -15,7 +15,7 @@ jobs:
       fail-fast: true
       matrix:
         os: [ubuntu-latest]
-        php: [8.1, 8.2, 8.3]
+        php: [8.2, 8.3, 8.4, 8.5]
 
     name: PHP ${{ matrix.php }}
 
@@ -39,7 +39,6 @@ jobs:
         run: |
           cp .env.example .env
           touch tests/Bootstrap/database.sqlite
-          bin/console xeed
 
       - name: Execute tests
         run: composer test

@@ -5,6 +5,7 @@ namespace Cable8mm\Xeed;
 use ArrayAccess;
 use Cable8mm\Xeed\Interfaces\ProviderInterface;
 use Cable8mm\Xeed\Support\Path;
+use Dotenv\Dotenv;
 use Exception;
 use InvalidArgumentException;
 use PDO;
@@ -52,7 +53,7 @@ final class Xeed implements ArrayAccess
     ];
 
     /**
-     * @var array<\Cable8mm\Xeed\Table> Table array.
+     * @var array<Table> Table array.
      */
     private array $tables = [];
 
@@ -72,38 +73,40 @@ final class Xeed implements ArrayAccess
      */
     public function addConnection(array $connection): static
     {
-        // self::$instance = new self($driver, $database, $host, $port, $username, $password);
-
         $options = $connection['options'] ?? [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION];
 
-        $this->provider = new (__NAMESPACE__.'\\Provider\\'.ucfirst($connection['driver']).'Provider');
+        $this->provider = $this->makeProvider($connection['driver']);
 
         $this->driver = $connection['driver'];
 
         switch ($connection['driver']) {
             case 'sqlite':
-                $dns = $connection['driver'].':'.($database ?? Path::database().DIRECTORY_SEPARATOR.'database.sqlite');
+                $database = $connection['database'] ?? Path::database().DIRECTORY_SEPARATOR.'database.sqlite';
+                $dsn = $connection['driver'].':'.$database;
 
-                $this->pdo = new PDO($dns);
+                $this->pdo = new PDO($dsn, null, null, $options);
                 break;
 
             case 'mysql':
-                $dns = $connection['driver'].
+                $dsn = $connection['driver'].
                     ':host='.
                     $connection['host'].
                     ((! empty($connection['port'])) ? (';port='.$connection['port']) : '').';dbname='.$connection['database'];
 
-                $this->pdo = new PDO($dns, $connection['username'], $connection['password'], $options);
+                $this->pdo = new PDO($dsn, $connection['username'], $connection['password'], $options);
                 break;
 
             case 'pgsql':
-                $dns = $connection['driver'].
+                $dsn = $connection['driver'].
                     ':host='.
                     $connection['host'].
                     ((! empty($connection['port'])) ? (';port='.$connection['port']) : '').';dbname='.$connection['database'].';';
 
-                $this->pdo = new PDO($dns, $connection['username'], $connection['password']);
+                $this->pdo = new PDO($dsn, $connection['username'], $connection['password'], $options);
                 break;
+
+            default:
+                throw new InvalidArgumentException($connection['driver'].' is not supported.');
         }
 
         return $this;
@@ -120,7 +123,7 @@ final class Xeed implements ArrayAccess
 
         $this->driver = $pdo->getAttribute(PDO::ATTR_DRIVER_NAME);
 
-        $this->provider = new (__NAMESPACE__.'\\Provider\\'.ucfirst($this->driver).'Provider');
+        $this->provider = $this->makeProvider($this->driver);
 
         return $this;
     }
@@ -133,7 +136,7 @@ final class Xeed implements ArrayAccess
     public static function getInstance(): static
     {
         if (self::$instance === null) {
-            $dotenv = \Dotenv\Dotenv::createImmutable(getcwd());
+            $dotenv = Dotenv::createImmutable(getcwd());
             $dotenv->safeLoad();
 
             $driver = $_ENV['DB_CONNECTION'];
@@ -196,6 +199,16 @@ final class Xeed implements ArrayAccess
     }
 
     /**
+     * Create a provider for the given driver.
+     */
+    private function makeProvider(string $driver): ProviderInterface
+    {
+        $provider = __NAMESPACE__.'\\Provider\\'.ucfirst($driver).'Provider';
+
+        return new $provider;
+    }
+
+    /**
      * Attach tables and columns.
      *
      * @param  string  $table  The table name to attach child provider
@@ -211,7 +224,7 @@ final class Xeed implements ArrayAccess
     /**
      * Get attached tables.
      *
-     * @return \Cable8mm\Xeed\Table[] The method returns the attached tables
+     * @return Table[] The method returns the attached tables
      */
     public function getTables(): array
     {
@@ -221,7 +234,7 @@ final class Xeed implements ArrayAccess
     /**
      * Get a specific attached table.
      *
-     * @return \Cable8mm\Xeed\Table|null The method returns the table instance or null
+     * @return Table|null The method returns the table instance or null
      */
     public function getTable(string $table): ?Table
     {

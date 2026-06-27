@@ -4,6 +4,7 @@ namespace Cable8mm\Xeed\Generators;
 
 use Cable8mm\Xeed\Support\File;
 use Cable8mm\Xeed\Support\Path;
+use Cable8mm\Xeed\Table;
 
 /**
  * Generator for `dist/database/seeders/DatabaseSeeder.php`.
@@ -11,27 +12,24 @@ use Cable8mm\Xeed\Support\Path;
 final class DatabaseSeederGenerator
 {
     /**
+     * The left padding for the body of the generated.
+     */
+    private const INDENT = '            ';
+
+    /**
      * @var string Stub string from the stubs folder file.
      */
     private string $stub;
 
-    /**
-     * The left padding for the body of the generated.
-     */
-    public const INTENT = '            ';
+    private array $tables;
 
-    private function __construct(
-        private array $tables,
-        private ?string $namespace = null,
-        private ?string $destination = null
-    ) {
-        if (is_null($destination)) {
-            $this->destination = Path::seeder();
-        }
+    private string $destination;
 
-        if (is_null($namespace)) {
-            $this->namespace = '\App\Models';
-        }
+    private function __construct(array $tables, ?string $namespace = null, ?string $destination = null)
+    {
+        $this->tables = $tables;
+        $this->destination = $destination ?? Path::seeder();
+        unset($namespace);
 
         $this->stub = File::system()->read(Path::stub().DIRECTORY_SEPARATOR.'DatabaseSeeder.stub');
     }
@@ -41,23 +39,17 @@ final class DatabaseSeederGenerator
      */
     public function run(bool $force = false): void
     {
-        $seeder_classes = '';
+        $seederClasses = '';
 
         foreach ($this->tables as $table) {
-            $seeder_classes .= DatabaseSeederGenerator::INTENT.$table->model().'Seeder::class,'.PHP_EOL;
+            $seederClasses .= DatabaseSeederGenerator::INDENT.$table->model().'Seeder::class,'.PHP_EOL;
         }
 
-        $seeder_classes = preg_replace('/\n$/', '', $seeder_classes);
-
-        $seederClass = str_replace(
-            ['{seeder_classes}'],
-            [$seeder_classes],
-            $this->stub
-        );
+        $seederClasses = preg_replace('/\n$/', '', $seederClasses);
 
         File::system()->write(
             $this->destination.DIRECTORY_SEPARATOR.'DatabaseSeeder.php',
-            $seederClass,
+            str_replace(['{seeder_classes}'], [$seederClasses], $this->stub),
             $force
         );
     }
@@ -65,7 +57,7 @@ final class DatabaseSeederGenerator
     /**
      * Create a instance.
      *
-     * @param  array<\Cable8mm\Xeed\Table>  $tables  The model class name
+     * @param  array<Table>  $tables  The model class name
      * @param  string  $namespace  The model namespace
      * @param  string  $destination  The path to the dist folder
      */

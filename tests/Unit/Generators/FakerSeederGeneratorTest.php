@@ -23,11 +23,18 @@ final class FakerSeederGeneratorTest extends TestCase
 
     protected function tearDown(): void
     {
-        // File::system()->delete(Path::testgen().DIRECTORY_SEPARATOR.'SampleSeeder.php');
+        File::system()->delete(Path::testgen().DIRECTORY_SEPARATOR.'SampleSeeder.php');
     }
 
-    public function test_it_can_can_generate_seeder_file(): void
+    public function test_it_generates_faker_seeder_file(): void
     {
         $this->assertFileExists(Path::testgen().DIRECTORY_SEPARATOR.'SampleSeeder.php');
+    }
+
+    public function test_it_generates_default_content(): void
+    {
+        $file = File::system()->read(Path::testgen().DIRECTORY_SEPARATOR.'SampleSeeder.php');
+
+        $this->assertStringContainsString('DB::table(\'samples\')->truncate();', $file);
     }
 }
